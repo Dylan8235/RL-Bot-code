@@ -39,6 +39,11 @@ class BotCommandAgent(BaseAgent):
         self.controller = SimpleControllerState()
         # a flag that tells us when kickoff is happening
         self.kickoff_flag = False
+        #text at top left of screen
+        self.debug_text = ''
+        #list of debugline objects drawn for debugging
+        self.debug_lines = []    
+
 
     def get_ready(self, packet: game_data_struct.GameTickPacket):
         # Preps all of the objects that will be updated during play
@@ -113,6 +118,7 @@ class BotCommandAgent(BaseAgent):
         self.preprocess(packet)
 
         self.renderer.begin_rendering()
+        self.draw_debug_lines()
         # Run our strategy code
         self.run()
         # run the routine on the end of the stack
@@ -122,6 +128,66 @@ class BotCommandAgent(BaseAgent):
         self.renderer.end_rendering()
         # send our updated controller back to rlbot
         return self.controller
+
+
+    def get_closest_large_boost(self):
+        available_boosts = [boost for boost in self.boosts if boost.large and boost.active]
+        closest_boost = None
+        closest_distance = 10000
+        for boost in available_boosts:
+            distance = (self.me.location - boost.location).magnitude()
+            if closest_boost is None or distance < closest_distance:
+                closest_boost = boost
+                closest_distance = distance
+        return closest_boost
+
+
+
+    def is_in_front_of_ball(self):
+        me_to_goal = (self.me.location - self.foe_goal.location).magnitude()
+        ball_to_goal = (self.ball.location - self.foe_goal.location).magnitude()
+        if me_to_goal > 1000 and me_to_goal < ball_to_goal:
+            return True
+        return False
+
+
+    def get_intercept_time(self, ball_location, goal_location):
+        # Ball speed can be estimated from the ball's velocity
+        ball_velocity = self.ball.velocity.magnitude()  # Get ball's speed
+        ball_to_goal_distance = (goal_location - ball_location).magnitude()
+
+        # Prevent division by zero if the ball is stationary
+        if ball_velocity > 1:  # If speed is greater than 1, it's moving; otherwise, it's stuck.
+            intercept_time = ball_to_goal_distance / ball_velocity
+        else:
+            intercept_time = float('inf')  # Set to high value if the ball isn't moving
+
+        return intercept_time
+
+
+    def print_debug(self):
+        white = self.renderer.white()
+        self.renderer.draw_string_2d(10, 150, 3, 3, self.debug_text, white)
+
+    def add_debug_line(self, name, vec1, vec2, color=[255, 255, 255]):
+        dupes = [line for line in self.debug_lines if line.name == name]
+        if len(dupes) > 0:
+            return
+        self.debug_lines.append(DebugLine(name, vec1, vec2, self.renderer.create_color(255, *color)))
+
+    def remove_debug_line(self, name):
+        self.debug_lines = [line for line in self.debug_lines if line.name != name]
+
+    def clear_debug_lines(self):
+        self.debug_lines = []
+
+    def draw_debug_lines(self):
+        for line in self.debug_lines:
+            self.renderer.draw_line_3d(line.vec1, line.vec2, line.color)
+
+
+
+
 
     def run(self):
         # override this with your strategy code
@@ -435,3 +501,12 @@ class Vector3:
         if start.dot(s) < end.dot(s):
             return end
         return start
+    
+
+
+class DebugLine():
+    def __init__(self, name, vec1, vec2, color) -> None:
+        self.name = name
+        self.vec1 = vec1
+        self.vec2 = vec2
+        self.color = color
