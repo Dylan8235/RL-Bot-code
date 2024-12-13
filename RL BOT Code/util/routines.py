@@ -136,15 +136,15 @@ class shooting(Routine):
         distance_to_ball = (self.ball_location - agent.me.location).magnitude()
         time_remaining = self.intercept_time - agent.time
 
-        # Ensure the target is the enemy goal
+        #Ensure the target is the enemy goal
         if self.target_location != agent.foe_goal.location:
-            return  # Abort if not targetting the right goal
+            return  #Abort if not targetting the right goal
 
         if distance_to_ball < 200 and time_remaining > 0.1:
             angles = defaultPD(agent, agent.me.local(self.ball_location - agent.me.location))
             defaultThrottle(agent, 2300, self.direction)
 
-            # Performing the shot
+            #Performing the shot
             if self.counter == 0 and time_remaining < 0.5:
                 agent.controller.jump = True
                 self.jump_time = agent.time
@@ -157,13 +157,13 @@ class shooting(Routine):
                     agent.controller.jump = False
                     self.counter += 1
 
-            # Adjust the angles based on shot direction
+            #Adjust the angles based on shot direction
             if self.counter == 1:
                 agent.controller.pitch = steerPD(self.shot_vector.pitch, 0)
                 agent.controller.yaw = steerPD(self.shot_vector.yaw, 0)
 
         elif time_remaining < 0:
-            # If we're out of time, stop the routine
+            #If we're out of time, stop the routine
             agent.clear_intent()
 
 
@@ -175,15 +175,15 @@ class shooting(Routine):
 
 
     def run(self):
-        # Shooting logic
+        #Shooting logic
         distance_to_ball = (self.ball.location - self.me.location).magnitude()
         intercept_time = self.get_intercept_time(self.ball.location, self.foe_goal.location)
 
-        # Calculate shot vector as the direction from ball to goal
+        #Calculate shot vector as the direction from ball to goal
         shot_vector = (self.foe_goal.location - self.ball.location).normalize()
         
         if self.me.airborne and distance_to_ball < 200 and self.get_intent() is None:
-            # Create a new shooting routine based on current knowledge
+            #Create a new shooting routine based on current knowledge
             self.set_intent(shooting(self.ball.location, self.foe_goal.location, shot_vector, intercept_time))
             self.debug_text = 'Shooting'
             self.add_debug_line('shooting', self.me.location, self.foe_goal.location, [0, 255, 0])
@@ -192,12 +192,12 @@ class shooting(Routine):
 
 
     def get_intercept_time(self, ball_location, goal_location):
-        # Ball speed can be estimated from the ball's velocity
+        #Ball speed can be estimated from the ball's velocity
         ball_velocity = self.ball.velocity.magnitude()  # Get ball's speed
         ball_to_goal_distance = (goal_location - ball_location).magnitude()
 
-        # Intercept time is distance to the goal divided by ball's speed
-        # Prevent division by zero if the ball is nearly stationary by returning a default high time.
+        #Intercept time is distance to the goal divided by ball's speed
+        #Prevent division by zero if the ball is nearly stationary by returning a default high time.
         if ball_velocity > 1:  # If speed is greater than 1, it's moving; otherwise, it's stuck.
             intercept_time = ball_to_goal_distance / ball_velocity
         else:
@@ -230,9 +230,9 @@ class aerial_shot(Routine):
         car_to_intercept_perp = car_to_intercept.cross((0, 0, side_of_shot))
         flat_distance_remaining = car_to_intercept.flatten().magnitude()
 
-        # Ensure the target is the enemy goal
-        if agent.foe_goal.location != self.ball_location:  # Make sure we're not shooting towards our goal
-            # Calculate necessary speeds and control logic as in the original method
+        #Ensure the target is the enemy goal
+        if agent.foe_goal.location != self.ball_location:  #Make sure we're not shooting towards our goal
+            #Calculate necessary speeds and control logic as in the original method
             speed_required = flat_distance_remaining / time_remaining
             acceleration_required = backsolve(self.intercept, agent.me, time_remaining, 325)
             local_acceleration_required = agent.me.local(acceleration_required)
@@ -246,7 +246,7 @@ class aerial_shot(Routine):
 
             local_final_target = agent.me.local(final_target - agent.me.location)
 
-            # existing debug lines
+            #E xisting debug lines
             agent.line(agent.me.location, self.intercept)
             agent.line(self.intercept - Vector3(0, 0, 100), self.intercept + Vector3(0, 0, 100), [255, 0, 0])
             agent.line(final_target - Vector3(0, 0, 100), final_target + Vector3(0, 0, 100), [0, 255, 0])
@@ -299,17 +299,20 @@ class aerial_shot(Routine):
 
 
 class flip(Routine):
-    # Flip takes a vector in local coordinates and flips/dodges in that direction
-    # cancel causes the flip to cancel halfway through, which can be used to half-flip
+    #Flip takes a vector in local coordinates and flips/dodges in that direction
+    #Cancel causes the flip to cancel halfway through, which can be used to half-flip
     def __init__(self, vector: Vector3, cancel=False):
         self.vector = vector.normalize()
         self.pitch = abs(self.vector[0]) * -sign(self.vector[0])
         self.yaw = abs(self.vector[1]) * sign(self.vector[1])
         self.cancel = cancel
-        # the time the jump began
+        #time the jump began
         self.time = -1
-        # keeps track of the frames the jump button has been released
+        #keeps track of the frames the jump button has been released
         self.counter = 0
+
+
+
 
     def run(self, agent):
         if self.time == -1:
@@ -430,9 +433,9 @@ def run(self):
 
 
 class goto(Routine):
-    # Drives towards a designated (stationary) target
-    # Optional vector controls where the car should be pointing upon reaching the target
-    # TODO - slow down if target is inside our turn radius
+    #Drives towards a designated (stationary) target
+    #Optional vector controls where the car should be pointing upon reaching the target
+    #TODO - slow down if target is inside our turn radius
     def __init__(self, target: Vector3, vector: Vector3 | None=None, direction=1):
         self.target = target
         self.vector = vector
@@ -446,7 +449,7 @@ class goto(Routine):
                    self.target + Vector3(0, 0, 500), [255, 0, 255])
 
         if self.vector != None:
-            # See commends for adjustment in jump_shot or aerial for explanation
+            #See commends for adjustment in jump_shot or aerial for explanation
             side_of_vector = sign(self.vector.cross(
                 (0, 0, 1)).dot(car_to_target))
             car_to_target_perp = car_to_target.cross(
@@ -457,7 +460,7 @@ class goto(Routine):
         else:
             final_target = self.target
 
-        # Some adjustment to the final target to ensure it's inside the field and we don't try to dirve through any goalposts to reach it
+        #Some adjustment to the final target to ensure it's inside the field and we don't try to dirve through any goalposts to reach it
         if abs(agent.me.location[1]) > 5150:
             final_target[0] = cap(final_target[0], -750, 750)
 
@@ -482,8 +485,8 @@ class goto(Routine):
 
 
 class goto_boost(Routine):
-    # very similar to goto() but designed for grabbing boost
-    # if a target is provided the bot will try to be facing the target as it passes over the boost
+    #very similar to goto() but designed for grabbing boost
+    #if a target is provided the bot will try to be facing the target as it passes over the boost
     def __init__(self, boost, target=None):
         self.boost = boost
         self.target = target
@@ -509,7 +512,7 @@ class goto_boost(Routine):
             car_to_target = 0
             final_target = self.boost.location.copy()
 
-        # Some adjustment to the final target to ensure it's inside the field and we don't try to dirve through any goalposts to reach it
+        #Some adjustment to the final target to ensure it's inside the field and we don't try to dirve through any goalposts to reach it
         if abs(agent.me.location[1]) > 5150:
             final_target[0] = cap(final_target[0], -750, 750)
 
@@ -533,25 +536,25 @@ class goto_boost(Routine):
 
 
 class jump_shot(shooting):
-    # Hits a target point at a target time towards a target direction
-    # Target must be no higher than 300uu unless you're feeling lucky
+    #Hits a target point at a target time towards a target direction
+    #Target must be no higher than 300uu unless you're feeling lucky
     #TODO - speed
     def __init__(self, ball_location, intercept_time, shot_vector, ratio, direction=1, speed=2300):
         self.ball_location = ball_location
         self.intercept_time = intercept_time
-        # The direction we intend to hit the ball in
+        #The direction we intend to hit the ball in
         self.shot_vector = shot_vector
-        # The point we dodge at
-        # 173 is the 93uu ball radius + a bit more to account for the car's hitbox
+        #The point we dodge at
+        #173 is the 93uu ball radius + a bit more to account for the car's hitbox
         self.dodge_point = self.ball_location - (self.shot_vector * 173)
-        # Ratio is how aligned the car is. Low ratios (<0.5) aren't likely to be hit properly
+        #Ratio is how aligned the car is. Low ratios (<0.5) aren't likely to be hit properly
         self.ratio = ratio
-        # whether the car should attempt this backwards
+        #whether the car should attempt this backwards
         self.direction = direction
-        # Intercept speed not implemented
+        #Intercept speed not implemented
         self.speed_desired = speed
-        # controls how soon car will jump based on acceleration required. max 584
-        # bigger = later, which allows more time to align with shot vector
+        #controls how soon car will jump based on acceleration required. max 584
+        #bigger = later, which allows more time to align with shot vector
         #smaller = sooner
         self.jump_threshold = 400
         # Flags for what part of the routine we are in
@@ -561,10 +564,10 @@ class jump_shot(shooting):
 
     def run(self, agent):
         raw_time_remaining = self.intercept_time - agent.time
-        # Capping raw_time_remaining above 0 to prevent division problems
+        #Capping raw_time_remaining above 0 to prevent division problems
         time_remaining = cap(raw_time_remaining, 0.001, 10.0)
         car_to_ball = self.ball_location - agent.me.location
-        # whether we are to the left or right of the shot vector
+        #whether we are to the left or right of the shot vector
         side_of_shot = sign(self.shot_vector.cross((0, 0, 1)).dot(car_to_ball))
 
         car_to_dodge_point = self.dodge_point - agent.me.location
@@ -577,26 +580,26 @@ class jump_shot(shooting):
             self.dodge_point, agent.me, time_remaining, 0 if not self.jumping else 650)
         local_acceleration_required = agent.me.local(acceleration_required)
 
-        # The adjustment causes the car to circle around the dodge point in an effort to line up with the shot vector
-        # The adjustment slowly decreases to 0 as the bot nears the time to jump
+        #The adjustment causes the car to circle around the dodge point in an effort to line up with the shot vector
+        #The adjustment slowly decreases to 0 as the bot nears the time to jump
         adjustment = car_to_dodge_point.angle(
             self.shot_vector) * distance_remaining / 2.0  # size of adjustment
-        # factoring in how close to jump we are
+        #factoring in how close to jump we are
         adjustment *= (cap(self.jump_threshold -
                        (acceleration_required[2]), 0.0, self.jump_threshold) / self.jump_threshold)
-        # we don't adjust the final target if we are already jumping
+        #we don't adjust the final target if we are already jumping
         final_target = self.dodge_point + \
             ((car_to_dodge_perp.normalize() * adjustment)
              if not self.jumping else 0) + Vector3(0, 0, 50)
-        # Ensuring our target isn't too close to the sides of the field, where our car would get messed up by the radius of the curves
+        #Ensuring our target isn't too close to the sides of the field, where our car would get messed up by the radius of the curves
 
-        # Some adjustment to the final target to ensure it's inside the field and we don't try to dirve through any goalposts to reach it
+        #Some adjustment to the final target to ensure it's inside the field and we don't try to dirve through any goalposts to reach it
         if abs(agent.me.location[1]) > 5150:
             final_target[0] = cap(final_target[0], -750, 750)
 
         local_final_target = agent.me.local(final_target - agent.me.location)
 
-        # drawing debug lines to show the dodge point and final target (which differs due to the adjustment)
+        #drawing debug lines to show the dodge point and final target (which differs due to the adjustment)
         agent.line(agent.me.location, self.dodge_point)
         agent.line(self.dodge_point-Vector3(0, 0, 100),
                    self.dodge_point+Vector3(0, 0, 100), [255, 0, 0])
@@ -605,7 +608,7 @@ class jump_shot(shooting):
         agent.line(agent.ball.location, agent.ball.location +
                    (self.shot_vector * 300))
 
-        # Calling our drive utils to get us going towards the final target
+        #Calling our drive utils to get us going towards the final target
         angles = defaultPD(agent, local_final_target, self.direction)
         defaultThrottle(agent, speed_required, self.direction)
 
@@ -619,21 +622,21 @@ class jump_shot(shooting):
 
         if not self.jumping:
             if raw_time_remaining <= 0.0 or (speed_required - 2300) * time_remaining > 60 or not shot_valid(agent, self):
-                # If we're out of time or not fast enough to be within 45 units of target at the intercept time, we reset
+                #If we're out of time or not fast enough to be within 45 units of target at the intercept time, we reset
                 agent.clear_intent()
                 if agent.me.airborne:
                     agent.set_intent(recovery())
             elif local_acceleration_required[2] > self.jump_threshold and local_acceleration_required[2] > local_acceleration_required.flatten().magnitude():
-                # Switch into the jump when the upward acceleration required reaches our threshold, and our lateral acceleration is negligible
+                #Switch into the jump when the upward acceleration required reaches our threshold, and our lateral acceleration is negligible
                 self.jumping = True
         else:
             if (raw_time_remaining > 0.2 and not shot_valid(agent, self, 150)) or raw_time_remaining <= -0.9 or (not agent.me.airborne and self.counter > 0):
                 agent.set_intent(recovery())
             elif self.counter == 0 and local_acceleration_required[2] > 0.0 and raw_time_remaining > 0.083:
-                # Initial jump to get airborne + we hold the jump button for extra power as required
+                #Initial jump to get airborne + we hold the jump button for extra power as required
                 agent.controller.jump = True
             elif self.counter < 3:
-                # make sure we aren't jumping for at least 3 frames
+                #make sure we aren't jumping for at least 3 frames
                 agent.controller.jump = False
                 self.counter += 1
             elif raw_time_remaining <= 0.1 and raw_time_remaining > -0.9:
@@ -644,17 +647,17 @@ class jump_shot(shooting):
                     self.p = abs(vector[0]) * -sign(vector[0])
                     self.y = abs(vector[1]) * sign(vector[1]) * self.direction
                     self.dodging = True
-                # simulating a deadzone so that the dodge is more natural
+                #simulating a deadzone so that the dodge is more natural
                 agent.controller.pitch = self.p if abs(self.p) > 0.2 else 0
                 agent.controller.yaw = self.y if abs(self.y) > 0.3 else 0
 
 
 
 def is_corner_kickoff(agent):
-# Get the ball's location relative to the car.
+#Get the ball's location relative to the car.
     ball_local = agent.me.local(agent.ball.location)
 
-# Determine if the ball is on the side of the field.
+#Determine if the ball is on the side of the field.
     is_side_kickoff = abs(ball_local[1]) > 5000
 
 # Determine if the ball is in the corner.
@@ -673,15 +676,15 @@ def kickoff_strategy(agent):
 
 
 class kickoff(Routine):
-    # A simple 1v1 kickoff that just drives up behind the ball and dodges
-    # misses the boost on the slight-offcenter kickoffs haha
+    #A simple 1v1 kickoff that just drives up behind the ball and dodges
+    #misses the boost on the slight-offcenter kickoffs haha
     def run(self, agent):
         target = agent.ball.location + Vector3(0, 200*side(agent.team), 0)
         local_target = agent.me.local(target - agent.me.location)
         defaultPD(agent, local_target)
         defaultThrottle(agent, 2300)
         if local_target.magnitude() < 650:
-            # flip towards opponent goal
+            #flip towards opponent goal
             agent.set_intent(
                 flip(agent.me.local(agent.foe_goal.location - agent.me.location)))
 
@@ -690,9 +693,9 @@ class kickoff(Routine):
     #Perfect against slow kickoffs / only works on corner
 class speedflipkickoff(Routine):
     def run(self, agent):
-        # Check if the bot has collected the first boost pad
+        #Check if the bot has collected the first boost pad
         if agent.me.boost >= 25:
-            # Determine right_handed based on the ball's position relative to the car
+            #Determine right_handed based on the ball's position relative to the car
             right_handed = agent.me.local(agent.ball.location)[1] < 0
             agent.set_intent(SpeedFlip(right_handed=right_handed))
         else:
@@ -706,8 +709,8 @@ class speedflipkickoff(Routine):
 
 
 class recovery(Routine):
-    # Point towards our velocity vector and land upright, unless we aren't moving very fast
-    # A vector can be provided to control where the car points when it lands
+    #Point towards our velocity vector and land upright, unless we aren't moving very fast
+    #A vector can be provided to control where the car points when it lands
     def __init__(self, target=None):
         self.target = target
 
@@ -726,8 +729,8 @@ class recovery(Routine):
 
 
 class short_shot(Routine):
-    # This routine drives towards the ball and attempts to hit it towards a given target
-    # It does not require ball prediction and kinda guesses at where the ball will be on its own
+    #This routine drives towards the ball and attempts to hit it towards a given target
+    #It does not require ball prediction and kinda guesses at where the ball will be on its own
     def __init__(self, target):
         self.target = target
 
@@ -743,13 +746,13 @@ class short_shot(Routine):
         else:
             eta = 1.5
 
-        # If we are approaching the ball from the wrong side the car will try to only hit the very edge of the ball
+        #If we are approaching the ball from the wrong side the car will try to only hit the very edge of the ball
         left_vector = car_to_ball.cross((0, 0, 1))
         right_vector = car_to_ball.cross((0, 0, -1))
         target_vector = -ball_to_target.clamp(left_vector, right_vector)
         final_target = agent.ball.location + (target_vector*(distance/2))
 
-        # Some adjustment to the final target to ensure we don't try to dirve through any goalposts to reach it
+        #Some adjustment to the final target to ensure we don't try to dirve through any goalposts to reach it
         if abs(agent.me.location[1]) > 5150:
             final_target[0] = cap(final_target[0], -750, 750)
 
